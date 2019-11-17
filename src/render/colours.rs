@@ -1,0 +1,17 @@
+pub const BLACK_ON_BLACK : i16 = 1;
+pub const WHITE_ON_WHITE : i16 = 2;
+pub const YELLOW_ON_YELLOW : i16 = 3;
+pub const WHITE_ON_BLACK : i16 = 4;
+pub const BLUE_ON_BLUE : i16 = 5;
+pub const BLACK_ON_RED : i16 = 6;
+pub const WHITE_ON_RED : i16 = 7;
+pub const BLACK_ON_YELLOW : i16 = 8;
+pub const BLACK_ON_CYAN : i16 = 9;
+pub const BLACK_ON_MAGENTA : i16 = 10;
+pub const BLACK_ON_GREEN : i16 = 11;
+pub const YELLOW_ON_BLACK : i16 = 12;
+pub const WHITE_ON_CYAN : i16 = 13;
+pub const RED_ON_RED : i16 = 14;
+pub const RED_ON_BLACK : i16 = 15;
+pub const BLUE_ON_WHITE : i16 = 16;
+pub const WHITE_ON_BLUE : i16 = 17;
