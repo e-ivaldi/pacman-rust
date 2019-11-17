@@ -1,15 +1,14 @@
 extern crate ncurses;
 
-mod render;
-mod level;
 mod game;
+mod level;
+mod render;
 
 fn main() {
-    let level = level::Level::new("/home/manu/wahanda/pacman/src/level");
-    let render = render::Render{};
+    let level = level::Level::new("resources/level");
+    let render = render::Render {};
     let game = game::Game::new(&render, &level);
 
     game.start();
     game.stop();
-
 }

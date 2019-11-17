@@ -67,44 +67,21 @@ impl Level {
                         pacman.position = Position { y, x };
                         OTHER
                     }
-                    '1' => {
-                        ghosts[0] = Mobile {
+                    '1' | '2' | '3' | '4' => {
+                        ghosts[c.to_digit(10).unwrap() as usize - 1] = Mobile {
                             position: Position { y, x },
                             direction: Direction::RIGHT,
-                        };
-                        OTHER
-                    }
-                    '2' => {
-                        ghosts[1] = Mobile {
-                            position: Position { y, x },
-                            direction: Direction::UP,
-                        };
-                        OTHER
-                    }
-                    '3' => {
-                        ghosts[2] = Mobile {
-                            position: Position { y, x },
-                            direction: Direction::DOWN,
-                        };
-                        OTHER
-                    }
-                    '4' => {
-                        ghosts[3] = Mobile {
-                            position: Position { y, x },
-                            direction: Direction::LEFT,
                         };
                         OTHER
                     }
                     _ => OTHER,
                 };
 
-                if x == 0 {
-                    let mut line: Vec<Block> = Vec::new();
-                    line.push(piece);
-                    grid.push(line);
-                } else {
-                    grid[y].push(piece);
+                if !grid.get(y).is_some() {
+                    grid.push(Vec::new());
                 }
+                grid[y].push(piece);
+
                 x += 1
             }
             x = 0;
