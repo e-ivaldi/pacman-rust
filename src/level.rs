@@ -19,16 +19,18 @@ pub enum Direction {
 
 const DEFAULT_MOBILE: Mobile = Mobile {
     position: Position { y: 0, x: 0 },
+    previous_position: Position { y: 0, x: 0 },
     direction: Direction::LEFT,
 };
 
 #[derive(Debug, Copy, Clone)]
 pub struct Mobile {
     pub position: Position,
+    pub previous_position: Position,
     pub direction: Direction,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Block {
     WALL,
     GATE,
@@ -43,6 +45,22 @@ pub struct Level {
     ghosts: [Mobile; 4],
 }
 
+impl Mobile {
+    pub fn set_direction(&mut self, direction: Direction) {
+        self.direction = direction;
+    }
+
+    pub fn walk(&mut self) {
+        self.previous_position = self.position;
+        match self.direction {
+            Direction::LEFT => self.position.x -= 1,
+            Direction::RIGHT => self.position.x += 1,
+            Direction::UP => self.position.y -= 1,
+            Direction::DOWN => self.position.y += 1,
+        };
+    }
+}
+
 impl Level {
     pub fn new(filename: &str) -> Level {
         let file = File::open(filename).unwrap();
@@ -55,6 +73,7 @@ impl Level {
 
         let mut pacman = DEFAULT_MOBILE.clone();
         let mut ghosts = [DEFAULT_MOBILE.clone(); 4];
+        //let mut ghosts = [DEFAULT_MOBILE.clone(); 4];
 
         reader.lines().for_each(|line| {
             for c in line.unwrap().chars() {
@@ -70,6 +89,7 @@ impl Level {
                     '1' | '2' | '3' | '4' => {
                         ghosts[c.to_digit(10).unwrap() as usize - 1] = Mobile {
                             position: Position { y, x },
+                            previous_position: Position { y, x },
                             direction: Direction::RIGHT,
                         };
                         OTHER
@@ -95,8 +115,8 @@ impl Level {
         }
     }
 
-    pub fn get_pacman(&self) -> &Mobile {
-        &self.pacman
+    pub fn get_pacman(&mut self) -> &mut Mobile {
+        &mut self.pacman
     }
 
     pub fn get_ghosts(&self) -> &[Mobile; 4] {
@@ -115,5 +135,27 @@ impl Level {
 
     pub fn width(&self) -> usize {
         self.grid.get(0).unwrap().len()
+    }
+
+    pub fn is_walkable(&self, position: &Position, direction: &Direction) -> bool {
+        match direction {
+            Direction::LEFT => self.is_walkable_block(&self.grid[position.y][position.x - 1]),
+            Direction::RIGHT => self.is_walkable_block(&self.grid[position.y][position.x + 2]),
+            Direction::UP => {
+                self.is_walkable_block(&self.grid[position.y - 1][position.x])
+                    && self.is_walkable_block(&self.grid[position.y - 1][position.x + 1])
+            }
+            Direction::DOWN => {
+                self.is_walkable_block(&self.grid[position.y + 1][position.x])
+                    && self.is_walkable_block(&self.grid[position.y + 1][position.x + 1])
+            }
+        }
+    }
+
+    fn is_walkable_block(&self, block: &Block) -> bool {
+        match block {
+            Block::WALL | Block::GATE => false,
+            Block::POWERUP | Block::DOT | Block::OTHER => true,
+        }
     }
 }

@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use ncurses::*;
 
 use crate::level::{Block, Direction, Level, Mobile};
@@ -5,9 +7,17 @@ use crate::render::colours::*;
 
 mod colours;
 
-pub struct Render {}
+pub struct Render {
+    time: SystemTime,
+}
 
 impl Render {
+    pub fn new() -> Render {
+        Render {
+            time: SystemTime::now(),
+        }
+    }
+
     pub fn start(&self) {
         setlocale(LcCategory::all, "");
         let window = initscr();
@@ -18,6 +28,7 @@ impl Render {
         nodelay(window, false);
         init_color(COLOR_BLACK, 0, 0, 0);
         cbreak();
+        timeout(5000);
         self.initialize_colors();
     }
 
@@ -39,38 +50,55 @@ impl Render {
                 };
 
                 self.use_color(color);
-
                 self.draw_cell(y, x, token);
             }
         }
         refresh();
     }
 
-    pub fn wait(&self) {
-        getch();
-    }
-
     pub fn draw_pacman(&self, pacman: &Mobile) {
         self.use_color(BLACK_ON_YELLOW);
         let token = self.pacman_mouth_from_direction(&pacman.direction);
-        self.draw_mobile(pacman, token, ' ');
+        self.draw_mobile(pacman, BLACK_ON_YELLOW, token, ' ');
         refresh();
     }
 
     pub fn draw_ghosts(&self, ghosts: &[Mobile; 4]) {
-        let available_colours = [WHITE_ON_CYAN, WHITE_ON_BLUE, WHITE_ON_RED, BLACK_ON_MAGENTA];
+        let available_colours = [
+            WHITE_ON_CYAN,
+            BLACK_ON_GREEN,
+            WHITE_ON_RED,
+            BLACK_ON_MAGENTA,
+        ];
 
         let mut counter = 0;
         for ghost in ghosts {
             let colours_index = counter % available_colours.len();
-            self.use_color(*available_colours.get(colours_index).unwrap());
-            self.draw_mobile(ghost, self.random_ghost_eye(), self.random_ghost_eye());
+            let color = *available_colours.get(colours_index).unwrap();
+            self.draw_mobile(
+                ghost,
+                color,
+                self.random_ghost_eye(),
+                self.random_ghost_eye(),
+            );
             refresh();
             counter += 1;
         }
     }
 
-    fn draw_mobile(&self, mobile: &Mobile, token_left: char, token_right: char) {
+    fn clean_mobile(&self, mobile: &Mobile) {
+        self.use_color(BLACK_ON_BLACK);
+        self.draw_cell(mobile.previous_position.y, mobile.previous_position.x, ' ');
+        self.draw_cell(
+            mobile.previous_position.y,
+            mobile.previous_position.x + 1,
+            ' ',
+        );
+    }
+
+    fn draw_mobile(&self, mobile: &Mobile, color: i16, token_left: char, token_right: char) {
+        self.clean_mobile(mobile);
+        self.use_color(color);
         self.draw_cell(mobile.position.y, mobile.position.x, token_left);
         self.draw_cell(mobile.position.y, mobile.position.x + 1, token_right);
     }
@@ -84,15 +112,31 @@ impl Render {
     }
 
     fn random_ghost_eye(&self) -> char {
-        'O'
+        if self.random_time_has_passed() {
+            return 'O';
+        }
+        'o'
     }
 
     fn pacman_mouth_from_direction(&self, direction: &Direction) -> char {
         match direction {
-            Direction::LEFT => '>',
+            Direction::LEFT => {
+                if self.time_has_passed(500) {
+                    return '>';
+                }
+                '-'
+            }
             Direction::RIGHT => '<',
             _ => '>',
         }
+    }
+
+    fn random_time_has_passed(&self) -> bool {
+        self.time.elapsed().unwrap().as_millis() % 1000 > 500 && rand::random::<u8>() % 10 == 0
+    }
+
+    fn time_has_passed(&self, time: u128) -> bool {
+        self.time.elapsed().unwrap().as_millis() % 1000 > time
     }
 
     fn initialize_colors(&self) {
