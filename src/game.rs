@@ -1,11 +1,9 @@
 use std::sync::mpsc;
 use std::thread;
 use std::thread::sleep;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
-use ncurses::refresh;
-use ncurses::use_default_colors;
-use ncurses::{chtype, getch, mvaddstr, mvprintw};
+use ncurses::{getch, mvaddstr};
 
 use crate::level::{Direction, Level};
 use crate::render::Render;
@@ -68,7 +66,7 @@ impl<'a> Game<'_> {
                     }
                     _ => {}
                 },
-                Err(x) => {}
+                Err(_) => {}
             }
 
             sleep(Duration::from_millis(100));
