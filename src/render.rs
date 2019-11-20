@@ -21,14 +21,14 @@ impl Render {
     pub fn start(&self) {
         setlocale(LcCategory::all, "");
         let window = initscr();
-        start_color();
         keypad(window, true);
+        start_color();
         noecho();
         curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
         nodelay(window, false);
         init_color(COLOR_BLACK, 0, 0, 0);
         cbreak();
-        timeout(5000);
+        //timeout(5000);
         self.initialize_colors();
     }
 

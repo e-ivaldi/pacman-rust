@@ -1,9 +1,9 @@
 use std::sync::mpsc;
 use std::thread;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
-use ncurses::getch;
+use ncurses::{chtype, getch, mvprintw};
 
 use crate::level::{Direction, Level};
 use crate::render::Render;
@@ -22,7 +22,10 @@ impl<'a> Game<'_> {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || loop {
-            let m = getch();
+            mvprintw(1, 80, &format!("Asking for key.. {:?}     ", SystemTime::now()));
+            let m: i32 = getch();
+            mvprintw(2, 80, &format!("sending key {}     ", m));
+
             tx.send(m).unwrap()
         });
 
@@ -40,19 +43,22 @@ impl<'a> Game<'_> {
             }
 
             let pac = self.level.get_pacman();
-            match rx.recv().unwrap() {
-                ncurses::KEY_UP => pac.set_direction(Direction::UP),
-                ncurses::KEY_DOWN => pac.set_direction(Direction::DOWN),
-                ncurses::KEY_LEFT => pac.set_direction(Direction::LEFT),
-                ncurses::KEY_RIGHT => pac.set_direction(Direction::RIGHT),
-                _ => {}
+            match rx.try_recv() {
+                Ok(key) => match key {
+                    260 => self.level.get_pacman().set_direction(Direction::LEFT),
+                    261 => self.level.get_pacman().set_direction(Direction::RIGHT),
+                    259 => self.level.get_pacman().set_direction(Direction::UP),
+                    258 => self.level.get_pacman().set_direction(Direction::DOWN),
+                    _ => {},
+                }
+                Err(x) => { mvprintw(4, 80, &format!("err: {:?}", x)); }
             }
 
-            sleep(Duration::from_millis(200));
+                sleep(Duration::from_millis(200));
+            }
+        }
+
+        pub fn stop(&self) {
+            self.render.stop();
         }
     }
-
-    pub fn stop(&self) {
-        self.render.stop();
-    }
-}
