@@ -3,7 +3,9 @@ use std::thread;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 
-use ncurses::{chtype, getch, mvprintw};
+use ncurses::refresh;
+use ncurses::use_default_colors;
+use ncurses::{chtype, getch, mvaddstr, mvprintw};
 
 use crate::level::{Direction, Level};
 use crate::render::Render;
@@ -19,46 +21,61 @@ impl<'a> Game<'_> {
     }
 
     pub fn start(&mut self) {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::sync_channel(1);
+
+        let p = tx.clone();
 
         thread::spawn(move || loop {
-            mvprintw(1, 80, &format!("Asking for key.. {:?}     ", SystemTime::now()));
-            let m: i32 = getch();
-            mvprintw(2, 80, &format!("sending key {}     ", m));
-
-            tx.send(m).unwrap()
+            p.send(getch()).unwrap();
         });
 
         self.render.start();
-        self.render.draw_map(self.level);
 
         loop {
+            self.render.draw_map(self.level);
             let pac = self.level.get_pacman();
             self.render.draw_pacman(pac);
             self.render.draw_ghosts(self.level.get_ghosts());
 
             let &mut pac = self.level.get_pacman();
-            if self.level.is_walkable(&pac.position, &pac.direction) {
+
+            if pac.next_direction != pac.direction
+                && self.level.is_walkable(&pac.position, &pac.next_direction)
+            {
+                self.level.get_pacman().set_direction(pac.next_direction);
+                self.level.get_pacman().walk();
+            } else if self.level.is_walkable(&pac.position, &pac.direction) {
                 self.level.get_pacman().walk();
             }
 
-            let pac = self.level.get_pacman();
             match rx.try_recv() {
                 Ok(key) => match key {
-                    260 => self.level.get_pacman().set_direction(Direction::LEFT),
-                    261 => self.level.get_pacman().set_direction(Direction::RIGHT),
-                    259 => self.level.get_pacman().set_direction(Direction::UP),
-                    258 => self.level.get_pacman().set_direction(Direction::DOWN),
-                    _ => {},
-                }
-                Err(x) => { mvprintw(4, 80, &format!("err: {:?}", x)); }
+                    ncurses::KEY_RIGHT => {
+                        mvaddstr(3, 80, &format!("going right\t"));
+                        self.level.get_pacman().set_next_direction(Direction::RIGHT);
+                    }
+                    ncurses::KEY_UP => {
+                        mvaddstr(3, 80, &format!("going up\t"));
+                        self.level.get_pacman().set_next_direction(Direction::UP);
+                    }
+                    ncurses::KEY_DOWN => {
+                        mvaddstr(3, 80, &format!("going down\t"));
+                        self.level.get_pacman().set_next_direction(Direction::DOWN);
+                    }
+                    ncurses::KEY_LEFT => {
+                        mvaddstr(3, 80, &format!("going left\t"));
+                        self.level.get_pacman().set_next_direction(Direction::LEFT);
+                    }
+                    _ => {}
+                },
+                Err(x) => {}
             }
 
-                sleep(Duration::from_millis(200));
-            }
-        }
-
-        pub fn stop(&self) {
-            self.render.stop();
+            sleep(Duration::from_millis(100));
         }
     }
+
+    pub fn stop(&self) {
+        self.render.stop();
+    }
+}

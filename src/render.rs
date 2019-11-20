@@ -28,7 +28,7 @@ impl Render {
         nodelay(window, false);
         init_color(COLOR_BLACK, 0, 0, 0);
         cbreak();
-        //timeout(5000);
+        timeout(-1);
         self.initialize_colors();
     }
 
@@ -49,18 +49,20 @@ impl Render {
                     Block::OTHER => (BLACK_ON_BLACK, ' '),
                 };
 
-                self.use_color(color);
-                self.draw_cell(y, x, token);
+                self.draw_with_color(color, || {
+                    self.draw_cell(y, x, token);
+                });
             }
         }
         refresh();
     }
 
     pub fn draw_pacman(&self, pacman: &Mobile) {
-        self.use_color(BLACK_ON_YELLOW);
-        let token = self.pacman_mouth_from_direction(&pacman.direction);
-        self.draw_mobile(pacman, BLACK_ON_YELLOW, token, ' ');
-        refresh();
+        self.draw_with_color(BLACK_ON_YELLOW, || {
+            let (left_token, right_token) = self.pacman_mouth_from_direction(&pacman.direction);
+            self.draw_mobile(pacman, BLACK_ON_YELLOW, left_token, right_token);
+            refresh();
+        });
     }
 
     pub fn draw_ghosts(&self, ghosts: &[Mobile; 4]) {
@@ -87,28 +89,35 @@ impl Render {
     }
 
     fn clean_mobile(&self, mobile: &Mobile) {
-        self.use_color(BLACK_ON_BLACK);
-        self.draw_cell(mobile.previous_position.y, mobile.previous_position.x, ' ');
-        self.draw_cell(
-            mobile.previous_position.y,
-            mobile.previous_position.x + 1,
-            ' ',
-        );
+        self.draw_with_color(BLACK_ON_BLACK, || {
+            self.draw_cell(mobile.previous_position.y, mobile.previous_position.x, ' ');
+            self.draw_cell(
+                mobile.previous_position.y,
+                mobile.previous_position.x + 1,
+                ' ',
+            );
+        });
     }
 
     fn draw_mobile(&self, mobile: &Mobile, color: i16, token_left: char, token_right: char) {
         self.clean_mobile(mobile);
-        self.use_color(color);
-        self.draw_cell(mobile.position.y, mobile.position.x, token_left);
-        self.draw_cell(mobile.position.y, mobile.position.x + 1, token_right);
+        self.draw_with_color(color, || {
+            self.draw_cell(mobile.position.y, mobile.position.x, token_left);
+            self.draw_cell(mobile.position.y, mobile.position.x + 1, token_right);
+        });
     }
 
     fn draw_cell(&self, y: usize, x: usize, token: char) {
         ncurses::mvaddch(y as i32, x as i32, token as u64);
     }
 
-    fn use_color(&self, color: i16) {
+    fn draw_with_color<F>(&self, color: i16, f: F)
+    where
+        F: FnOnce(),
+    {
         ncurses::attron(ncurses::COLOR_PAIR(color));
+        f();
+        ncurses::attron(ncurses::COLOR_PAIR(WHITE_ON_BLACK));
     }
 
     fn random_ghost_eye(&self) -> char {
@@ -118,16 +127,26 @@ impl Render {
         'o'
     }
 
-    fn pacman_mouth_from_direction(&self, direction: &Direction) -> char {
+    fn pacman_mouth_from_direction(&self, direction: &Direction) -> (char, char) {
         match direction {
             Direction::LEFT => {
                 if self.time_has_passed(500) {
-                    return '>';
+                    return ('>', ' ');
                 }
-                '-'
+                ('-', ' ')
             }
-            Direction::RIGHT => '<',
-            _ => '>',
+            Direction::RIGHT => {
+                if self.time_has_passed(500) {
+                    return (' ', '<');
+                }
+                (' ', '-')
+            }
+            _ => {
+                if self.time_has_passed(500) {
+                    return ('<', '>');
+                }
+                ('-', '-')
+            }
         }
     }
 

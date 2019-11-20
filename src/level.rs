@@ -9,7 +9,7 @@ pub struct Position {
     pub x: usize,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Direction {
     UP,
     DOWN,
@@ -21,6 +21,7 @@ const DEFAULT_MOBILE: Mobile = Mobile {
     position: Position { y: 0, x: 0 },
     previous_position: Position { y: 0, x: 0 },
     direction: Direction::LEFT,
+    next_direction: Direction::LEFT,
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -28,6 +29,7 @@ pub struct Mobile {
     pub position: Position,
     pub previous_position: Position,
     pub direction: Direction,
+    pub next_direction: Direction,
 }
 
 #[derive(Debug, PartialEq)]
@@ -48,6 +50,10 @@ pub struct Level {
 impl Mobile {
     pub fn set_direction(&mut self, direction: Direction) {
         self.direction = direction;
+    }
+
+    pub fn set_next_direction(&mut self, direction: Direction) {
+        self.next_direction = direction;
     }
 
     pub fn walk(&mut self) {
@@ -91,6 +97,7 @@ impl Level {
                             position: Position { y, x },
                             previous_position: Position { y, x },
                             direction: Direction::RIGHT,
+                            next_direction: Direction::RIGHT,
                         };
                         OTHER
                     }
