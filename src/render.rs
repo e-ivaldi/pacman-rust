@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use ncurses::*;
 
-use crate::level::{Block, Direction, Level, Mobile};
+use crate::level::{Block, Direction, Level, Mobile, Position};
 use crate::render::colours::*;
 
 mod colours;
@@ -36,10 +36,14 @@ impl Render {
         endwin();
     }
 
+    pub fn draw_points(&self, points: i32) {
+        mvaddstr(3, 60, &format!("Points: {}", points));
+    }
+
     pub fn draw_map(&self, level: &Level) {
         for y in 0..level.height() {
             for x in 0..level.width() {
-                let block = level.get_block_at_point(x, y);
+                let block = level.get_block_at_point(y, x);
 
                 let (color, token) = match block {
                     Block::WALL => (BLUE_ON_BLUE, ' '),

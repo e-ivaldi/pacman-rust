@@ -5,17 +5,22 @@ use std::time::Duration;
 
 use ncurses::{getch, mvaddstr};
 
-use crate::level::{Direction, Level};
+use crate::level::{Block, Direction, Level};
 use crate::render::Render;
 
 pub struct Game<'a> {
-    render: &'a Render,
+    render: &'a mut Render,
     level: &'a mut Level,
+    points: i32,
 }
 
 impl<'a> Game<'_> {
-    pub fn new(render: &'a Render, level: &'a mut Level) -> Game<'a> {
-        Game { render, level }
+    pub fn new(render: &'a mut Render, level: &'a mut Level) -> Game<'a> {
+        Game {
+            render,
+            level,
+            points: 0,
+        }
     }
 
     pub fn start(&mut self) {
@@ -45,6 +50,17 @@ impl<'a> Game<'_> {
             } else if self.level.is_walkable(&pac.position, &pac.direction) {
                 self.level.get_pacman().walk();
             }
+
+            match self.level.get_block_at_position(pac.position) {
+                Block::DOT => {
+                    self.level.clear_position(pac.position);
+                    self.points += 1
+                }
+                Block::POWERUP => {}
+                Block::GATE | Block::WALL | Block::OTHER => {}
+            }
+
+            self.render.draw_points(self.points);
 
             match rx.try_recv() {
                 Ok(key) => match key {

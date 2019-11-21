@@ -130,7 +130,15 @@ impl Level {
         &self.ghosts
     }
 
-    pub fn get_block_at_point(&self, x: usize, y: usize) -> &Block {
+    pub fn get_block_at_position(&self, position: Position) -> &Block {
+        self.get_block_at_point(position.y, position.x)
+    }
+
+    pub fn clear_position(&mut self, position: Position) {
+        self.grid[position.y][position.x] = Block::OTHER;
+    }
+
+    pub fn get_block_at_point(&self, y: usize, x: usize) -> &Block {
         let row = self.grid.get(y).unwrap();
         let block = row.get(x).unwrap();
         block
