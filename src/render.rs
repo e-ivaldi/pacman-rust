@@ -2,10 +2,10 @@ use std::time::SystemTime;
 
 use ncurses::*;
 
-use crate::level::{Block, Direction, Level, Mobile, Position};
-use crate::render::colours::*;
+use crate::level::{Block, Direction, Level, Mobile};
+use crate::render::colors::*;
 
-mod colours;
+mod colors;
 
 pub struct Render {
     time: SystemTime,
@@ -70,7 +70,7 @@ impl Render {
     }
 
     pub fn draw_ghosts(&self, ghosts: &[Mobile; 4]) {
-        let available_colours = [
+        let available_colors = [
             WHITE_ON_CYAN,
             BLACK_ON_GREEN,
             WHITE_ON_RED,
@@ -79,8 +79,8 @@ impl Render {
 
         let mut counter = 0;
         for ghost in ghosts {
-            let colours_index = counter % available_colours.len();
-            let color = *available_colours.get(colours_index).unwrap();
+            let colors_index = counter % available_colors.len();
+            let color = *available_colors.get(colors_index).unwrap();
             self.draw_mobile(
                 ghost,
                 color,
