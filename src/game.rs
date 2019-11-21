@@ -85,7 +85,12 @@ impl<'a> Game<'_> {
                 Err(_) => {}
             }
 
-            sleep(Duration::from_millis(100));
+            let sleep_millis = match pac.direction {
+                Direction::UP | Direction::DOWN => 100,
+                Direction::LEFT | Direction::RIGHT => 50,
+            };
+
+            sleep(Duration::from_millis(sleep_millis));
         }
     }
 

@@ -79,7 +79,6 @@ impl Level {
 
         let mut pacman = DEFAULT_MOBILE.clone();
         let mut ghosts = [DEFAULT_MOBILE.clone(); 4];
-        //let mut ghosts = [DEFAULT_MOBILE.clone(); 4];
 
         reader.lines().for_each(|line| {
             for c in line.unwrap().chars() {
