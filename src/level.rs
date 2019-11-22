@@ -1,7 +1,8 @@
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use crate::level::Block::{DOT, GATE, OTHER, POWERUP, WALL};
+use crate::level::Block::{DOT, GATE, OTHER, POWERUP, TELEPORT, WALL};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Position {
@@ -38,6 +39,7 @@ pub enum Block {
     GATE,
     DOT,
     POWERUP,
+    TELEPORT,
     OTHER,
 }
 
@@ -45,6 +47,13 @@ pub struct Level {
     grid: Vec<Vec<Block>>,
     pacman: Mobile,
     ghosts: [Mobile; 4],
+    teleports: HashSet<Position>,
+}
+
+impl Eq for Position{
+//    fn eq(&self, other: &Self) -> bool {
+//        self.x == other.x && self.y == other.y
+//    }
 }
 
 impl Mobile {
@@ -79,22 +88,28 @@ impl Level {
 
         let mut pacman = DEFAULT_MOBILE.clone();
         let mut ghosts = [DEFAULT_MOBILE.clone(); 4];
+        let mut teleports: HashSet<Position> = HashSet::new();
 
         reader.lines().for_each(|line| {
             for c in line.unwrap().chars() {
+                let current_position = Position{y, x};
                 let piece = match c {
                     'W' => WALL,
-                    'T' => GATE,
+                    'G' => GATE,
                     'd' => DOT,
                     'X' => POWERUP,
+                    'T' => {
+                        teleports.insert(current_position);
+                        TELEPORT
+                    }
                     'P' => {
-                        pacman.position = Position { y, x };
+                        pacman.position = current_position;
                         OTHER
                     }
                     '1' | '2' | '3' | '4' => {
                         ghosts[c.to_digit(10).unwrap() as usize - 1] = Mobile {
-                            position: Position { y, x },
-                            previous_position: Position { y, x },
+                            position: current_position,
+                            previous_position: current_position,
                             direction: Direction::RIGHT,
                             next_direction: Direction::RIGHT,
                         };
@@ -118,7 +133,12 @@ impl Level {
             grid,
             pacman,
             ghosts,
+            teleports,
         }
+    }
+
+    pub fn teleport(&self, from_position: Position) -> &Option<&Position> {
+        &self.teleports.iter().filter(|p| p!= from_position).last()
     }
 
     pub fn get_pacman(&mut self) -> &mut Mobile {

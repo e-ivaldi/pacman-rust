@@ -26,16 +26,19 @@ impl<'a> Game<'_> {
     pub fn start(&mut self) {
         let (tx, rx) = mpsc::sync_channel(1);
 
-        let p = tx.clone();
-
         thread::spawn(move || loop {
-            p.send(getch()).unwrap();
+            let mut last_c = 0;
+            let c = getch();
+            if c != last_c {
+                tx.send(c).unwrap();
+            }
+            last_c = c;
         });
 
         self.render.start();
 
+        self.render.draw_map(self.level);
         loop {
-            self.render.draw_map(self.level);
             let pac = self.level.get_pacman();
             self.render.draw_pacman(pac);
             self.render.draw_ghosts(self.level.get_ghosts());
@@ -63,25 +66,20 @@ impl<'a> Game<'_> {
             self.render.draw_points(self.points);
 
             match rx.try_recv() {
-                Ok(key) => match key {
-                    ncurses::KEY_RIGHT => {
-                        mvaddstr(3, 80, &format!("going right\t"));
-                        self.level.get_pacman().set_next_direction(Direction::RIGHT);
+                Ok(key) => {
+                    let next_direction: Option<Direction> = match key {
+                        ncurses::KEY_RIGHT => Option::from(Direction::RIGHT),
+                        ncurses::KEY_UP => Option::from(Direction::UP),
+                        ncurses::KEY_DOWN => Option::from(Direction::DOWN),
+                        ncurses::KEY_LEFT => Option::from(Direction::LEFT),
+                        _ => Option::None
+                    };
+
+                    match next_direction {
+                        Some(direction) => self.level.get_pacman().set_next_direction(direction),
+                        None => {}
                     }
-                    ncurses::KEY_UP => {
-                        mvaddstr(3, 80, &format!("going up\t"));
-                        self.level.get_pacman().set_next_direction(Direction::UP);
-                    }
-                    ncurses::KEY_DOWN => {
-                        mvaddstr(3, 80, &format!("going down\t"));
-                        self.level.get_pacman().set_next_direction(Direction::DOWN);
-                    }
-                    ncurses::KEY_LEFT => {
-                        mvaddstr(3, 80, &format!("going left\t"));
-                        self.level.get_pacman().set_next_direction(Direction::LEFT);
-                    }
-                    _ => {}
-                },
+                }
                 Err(_) => {}
             }
 
